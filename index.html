@@ -4,41 +4,300 @@
     <title>JS Lab</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, serif;
+            margin: 10;
+            padding: 50;
+            font-family: Arial, Arial;
         }
+		
+		.click {
+		  background-color: white;
+		  border: 2px solid black;
+		  color: white;
+		  padding: 50px 0px;
+		  text-align: center;
+		  text-decoration: none;
+		  font-size: 60px;
+		  border-radius: 12px;
+		  height: 400px;
+		  width: 100%;
+		  margin-top: 10px;
+		  white-space: pre-line;
+		  cursor: pointer;
+		  }
+		
+		#click-text {
+			color: black;
+			top: 50%;
+			position: relative;
+			text-align: center;
+		}
 
         h1 {
-            color: #0B3954;
+            color: #123456;
         }
-		.green {
-			color: green
+        h2 {
+            color: #0B5222;
+        }
+		.success {
+			background-color: green;
 		}
+		.fail {
+			background-color: red;
+		}
+		.ready {
+			background-color: blue;
+		}
+		
+		.inlined {
+			display: inline;
+		}
+		
+		.hidden {
+			visibility: hidden;
+		}
+
+		.buttonStart {
+		  background-color: #4CAF50;
+		  border: none;
+		  color: white;
+		  padding: 15px 32px;
+		  text-align: center;
+		  text-decoration: none;
+		  display: inline-block;
+		  font-size: 16px;
+			cursor: pointer;
+			transition: all ease 0.25s 0.1s;
+		}
+		
+		.buttonStart:hover {
+		  box-shadow: 0 0.5em 0.5em -0.4em darkgreen;
+		  transform: translateY(-0.25em);
+		}
+
+		.buttonStop {
+		  background-color: #f44336;
+		  border: none;
+		  color: white;
+		  padding: 15px 32px;
+		  text-align: center;
+		  text-decoration: none;
+		  display: inline-block;
+		  font-size: 16px;
+			cursor: pointer;
+			transition: all ease 0.25s 0.1s;
+		}
+		
+		.buttonStop:hover {
+		  box-shadow: 0 0.5em 0.5em -0.4em darkred;
+		  transform: translateY(-0.25em);
+		}
+
     </style>
 </head>
 <body>
-<div id="app">
-    <h1 id="main-header">Moja aplikacja</h1>
-    <p>To będzie gra. A oto co muszę zrobić:</p>
-    <ol>
-        <li class="boring">Nauczyć się HTML</li>
-        <li class="boring">Nauczyć się CSS</li>
-        <li>Nauczyć się JS</li>
-        <li id="super-important">Zaimplementować</li>
-    </ol>
-<input type="text" id="myTextField">
-<input type="checkbox" id="myCheckbox">
-<button type="button" onclick="readValues()">Odczytaj wartości</button>
-</div>
-<script>
-function readValues() {
-	const isChecked = document.getElementById('myCheckbox').checked;
-	if (isChecked) {
-		const text = document.getElementById('myTextField').value;
-		alert(text);
-	}
-}
-</script>
+	<div id="app">
+		<h1 id="main-header">Refleksomierz</h1>
+	</div>
+		<button onclick="startGame()" id="startButton" class="buttonStart">START</button>
+		<button onclick="stopGame()" id="stopButton" class="buttonStop" >STOP</button>
+	</div>
+
+	<p class="inlined">Kliknij ponizej po zmianie koloru, a ja zmierze czas :)</p>
+
+	<div id="click" class="click" onclick="clicked()">
+		<div id="click-text"></div>
+	</div>
+
+	<div id="stats" class="hidden">
+
+		<h2 id="stats-header">STATYSTYKI</h2>
+		
+		<table>
+		<tbody>
+			<tr>
+				<td><p class="">Najlepszy czas:</p></td>
+				<td><p id="stats-min" class="">0</p></td>
+			</tr>
+	
+			<tr>
+				<td><p class="">Najgorszy czas:</p></td>
+				<td><p id="stats-max" class="">0</p></td>
+			</tr>
+			
+			<tr>
+			
+				<td><p class="">Średni czas:</p></td>
+				<td><p id="stats-average" class="">0</p></td>
+			</tr>
+		
+			</tbody>
+		</table>
+		
+		<!-- <p>Najlepszy czas:</p> -->
+		<!-- <p id="stats-min" class="inlined">0</p> -->
+		
+		<!-- <p>Najgorszy czas:</p> -->
+		<!-- <p id="stats-max" class="inlined">0</p> -->
+		
+		<!-- <p>Średni czas:</p> -->
+		<!-- <p id="stats-average" class="inlined">0</p> -->
+		
+	</div>
+
+	<script>
+		var clicks = [];
+		var click_tries = 5;
+		var click_success = false;
+		
+		var click_success_string = "Dobrze";
+		var click_fail_string = "Za szybko";
+		var click_wait_string = "Czekaj";
+		var click_ready_string = "Klikaj!"
+		
+		var after_click_wait_time = 2000;
+		var ready_time_min = 1000;
+		var ready_time_max = 5000;
+		
+		var time_start = 0;
+		
+		var timeout;
+		
+		var click_height = 400;
+		
+		var start = document.getElementById("startButton");
+		var stop = document.getElementById("stopButton");
+		var click_button = document.getElementById("click");
+		var click_button_text = document.getElementById("click-text");
+		
+		var stats = document.getElementById("stats");
+		var stats_min = document.getElementById("stats-min");
+		var stats_max = document.getElementById("stats-max");
+		var stats_average = document.getElementById("stats-average");
+		
+		function updateButtonText(text)
+		{
+			click_button_text.innerText = text;
+			click_button_text.style.top = (click_height - click_button_text.clientHeight)/2;
+		}
+
+		function updateStats(){
+			
+			var click_min = -1;
+			var click_max = -1;
+			var click_average = 0;
+			
+			for(i in clicks)
+			{
+				var click_time = clicks[i];
+				if(click_min == -1 || click_time < click_min)
+					click_min = click_time;
+					
+				if(click_max == -1 || click_time > click_max)
+					click_max = click_time;
+				click_average += click_time;
+			}
+			
+			if(clicks.length > 0)
+			{
+				stats.classList.remove("hidden");
+				click_average = click_average/clicks.length;
+			}
+			
+			stats_min.innerText = click_min + " ms";
+			stats_max.innerText = click_max + " ms";
+			stats_average.innerText = Math.round(click_average) + " ms";
+		}
+		
+		function clicked()
+		{
+			var time_end = Date.now();
+			
+			click_button.classList.remove("ready");
+			
+			if(click_success)
+			{
+				var time_diff = time_end-time_start;
+				clicks.push(time_diff);
+				
+				click_button.classList.add("success");
+				var str = click_success_string + "\n"+time_diff+" ms";
+				updateButtonText(str);
+				
+				updateStats();
+				
+				if(clicks.length < click_tries)
+				{
+					// go again
+					clearTimeout(timeout);
+					timeout = setTimeout(wait,after_click_wait_time);
+				}
+				else
+				{
+					click_button.classList.remove("success");
+					var str = clicks.join(" ms\n")+" ms"
+					updateButtonText(str);
+				}
+			}
+			else
+			{
+			
+				click_button.classList.add("fail");
+				updateButtonText(click_fail_string);
+				
+				clearTimeout(timeout);
+				timeout = setTimeout(wait,after_click_wait_time);
+			}
+			
+			click_success = false;
+		}
+		
+		function ready()
+		{
+			time_start = Date.now();
+			click_success = true;
+			
+			click_button.classList.add("ready");
+			updateButtonText(click_ready_string);
+		}
+		
+		function wait()
+		{
+			click_button.classList.remove("ready");
+			click_button.classList.remove("success");
+			click_button.classList.remove("fail");
+			
+			updateButtonText(click_wait_string);
+			
+			var wait_time = ready_time_min + Math.floor((Math.random() * (ready_time_max-ready_time_min))+1);
+			
+			clearTimeout(timeout);
+			timeout = setTimeout(ready,wait_time);
+			
+		}
+
+		function startGame() {
+			clicks = [];
+			stats.classList.add("hidden");
+			
+			click_button.classList.remove("ready");
+			click_button.classList.remove("success");
+			click_button.classList.remove("fail");
+		
+			clearTimeout(timeout);
+			wait();
+		}
+		
+		function stopGame() {
+			clearTimeout(timeout);
+			
+			click_button.classList.remove("ready");
+			click_button.classList.remove("success");
+			click_button.classList.remove("fail");
+			
+			var str = clicks.join(" ms\n")+" ms";
+			updateButtonText(str); 
+		}
+
+	</script>
 </body>
 </html>
